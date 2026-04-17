@@ -1,5 +1,5 @@
 import eventlet
-eventlet.monkey_patch() # Render hatasını çözmek için en üstte olmalı!
+eventlet.monkey_patch(all=True)
 
 from flask import Flask, render_template_string, send_from_directory
 from flask_socketio import SocketIO, emit
